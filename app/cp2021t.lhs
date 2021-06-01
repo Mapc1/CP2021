@@ -1029,9 +1029,10 @@ g_eval_exp n = either (const n) (either id (either bin un)) where
     bin = cond ((Sum==).p1)    ((uncurry (+)).p2) ((uncurry (*)).p2)
     un  = cond ((Negate==).p1) (((-1)*).p2) (expd.p2)
 ---
-clean x = cond cmpBin (outExpAr . (const (N 0))) outExpAr x where
+clean x = (outExpAr . mcCond) x where
     cmpBin (Bin op a b) = (op == Product) && (a == (N 0) || b == (N 0))
     cmpBin _ = False
+    mcCond = cond cmpBin (const (N 0)) id
 ---
 gopt n = g_eval_exp n
 \end{code}
