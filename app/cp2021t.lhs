@@ -1023,7 +1023,7 @@ outExpAr (N a)        = (i2 . i1) a
 outExpAr (Bin op a b) = (i2 . i2 . i1) (op, (a, b))
 outExpAr (Un op a)    = (i2 . i2 . i2) (op, a)
 ---
-recExpAr f = id -|- (id -|- ((id >< (f >< f)) -|- (id >< f))) 
+recExpAr f = baseExpAr id id id f f id f
 ---
 g_eval_exp n = either (const n) (either id (either bin un)) where
     bin = cond ((Sum==).p1)    ((uncurry (+)).p2) ((uncurry (*)).p2)
