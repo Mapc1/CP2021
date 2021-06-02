@@ -1066,9 +1066,9 @@ ad_gen n = either ad_Var (either ad_Num (either ad_Bin ad_Un)) where
 \subsection*{Problema 2}
 Definir
 \begin{code}
-loop = undefined
-inic = undefined
-prj = undefined
+loop (c,f) = (div ((4*f+2)*c) (f+2),f+1)
+inic = (1,0)
+prj = p1
 \end{code}
 por forma a que
 \begin{code}
