@@ -1017,20 +1017,143 @@ ad v = p2 . cataExpAr (ad_gen v)
 \end{code}
 Definir:
 
+\begin{eqnarray*}
+\start
+	|outExpAr . idExpAr = id|
+%
+\just\equiv{ Definição |inExpAr = either (const X) num_ops|; Fusão-+ (20); Universal-+ (17) }
+%
+        |lcbr(
+		id . i1 = outExpAr . (const X)
+	)(
+		id . i2 = outExpAr . num_ops
+	)|
+%
+\just\equiv{ Natural-id (1); Definição |num_ops = either N ops|; Universal-+ (17) }
+%
+        |lcbr(
+		i1 = outExpAr . (const X)
+	)(lcbr(
+		i2 . i1 = outExpAr . N
+  )(
+    i2 . i2 = outExpAr . ops
+	))|
+%
+\just\equiv{ Definição |ops = either bin (uncurry Un)| }
+%
+        |lcbr(
+		i1 = outExpAr . (const X)
+	)(lcbr(
+		i2 . i1 = outExpAr . N
+  )(lcbr(
+    i2 . i2 . i1 = outExpAr . bin
+  )(
+    i2 . i2 . i2 = outExpAr . (uncurry Un)
+	)))|
+%
+\just\equiv{ Igualdade Extensional }
+%
+        |lcbr(
+		i1 () = (outExpAr . (const X)) ()
+	)(lcbr(
+		(i2 . i1) a = (outExpAr . N) a
+  )(lcbr(
+    (i2 . i2 . i1) (op,(a,b)) = (outExpAr . bin) (op,(a,b))
+  )(
+    (i2 . i2 . i2) (op,a) = (outExpAr . (uncurry Un)) (op,a)
+	)))|
+%
+\just\equiv{ Def-const (74); Definições |N a = N a|; |bin (op,(a,b)) = Bin op a b|; |uncurry Un (op,a) = Un op a| }
+%
+        |lcbr(
+		i1 () = outExpAr X
+	)(lcbr(
+		(i2 . i1) a = outExpAr (N a)
+  )(lcbr(
+    (i2 . i2 . i1) (op,(a,b)) = outExpAr (Bin op a b)
+  )(
+    (i2 . i2 . i2) (op,a) = outExpAr (Un op a)
+	)))|
+\qed
+\end{eqnarray*}
+
 \begin{code}
 outExpAr X            = i1 ()
 outExpAr (N a)        = (i2 . i1) a
 outExpAr (Bin op a b) = (i2 . i2 . i1) (op, (a, b))
 outExpAr (Un op a)    = (i2 . i2 . i2) (op, a)
 ---
+\end{code}
+
+O tipo de dados ExpAr não é mais que uma árvore em que cada elemento pode ser um de dois tipos de folhas, ou uma árvore binária ou uma lista ligada por isso a sua base é uma junção dos quatro
+\begin{eqnarray*}
+|recExpAr f = id + id + (id + (f >< f)) + (id + f)|
+\end{eqnarray*}
+Em função de baseExpAr temos:
+\begin{code}
 recExpAr f = baseExpAr id id id f f id f
----
-g_eval_exp n = either (const n) (either id (either bin un)) where
-    bin = cond ((Sum==).p1)    ((uncurry (+)).p2) ((uncurry (*)).p2)
-    un  = cond ((Negate==).p1) (((-1)*).p2) (expd.p2)
+\end{code}
+A função |eval_exp| calcula o valor da expressão por isso tem como input o tipo |EvalExp| 
+e como output um número real. Por isto o seu diagrama será o seguinte:
+\begin{eqnarray*}
+\xymatrix@@C=2cm{
+    |ExpAr|
+           \ar[d]_-{|cataNat g_eval_exp|}
+&
+    |1 + | \mathbb{R} | + (BinOp + (X >< X)) + (UnOp + X)|
+           \ar[d]^{|id + (cataNat g_eval_exp)|}
+           \ar[l]_-{|inExpAr|}
+\\
+     \mathbb{R}
+&
+     |1 +| \mathbb{R} | + (BinOp + (|\mathbb{R}| >< |\mathbb{R}|)) + (UnOp + |\mathbb{R}|)|
+           \ar[l]^-{|g_eval_exp|}
+}
+\end{eqnarray*}
+Com isto conclui-se que |g_eval_exp| é do tipo:
+\begin{eqnarray*}
+|1 +| \mathbb{R} | + (BinOp + (ExpAr >< ExpAr)) + (UnOp + ExpAr) ->| \mathbb{R}
+\end{eqnarray*}
+Esta função pode ser escrita em Haskell da seguinte maneira:
+\begin{eqnarray*}
+|g_eval_exp = either g1 (either g2 (either g3 g4))|
+\end{eqnarray*}
+Como |()| representa |X| e |N| representa um número temos:
+\begin{eqnarray*}
+|g1 n x = n|\\
+|g2 n a = a|
+\end{eqnarray*}
+Agora só nos falta definir |g_eval_exp| para as operações binárias. Bem, para ambas precisamos de um
+if a then b else c, ou seja, um condicional de McCarthy.
+\begin{eqnarray*}
+\start
+|g3(op,(a,b)) = cond ((op == Sum) (a + b) (a * b))|
+\just\equiv{ Definição infixa de (+); Definição uncurry (84) }
+|g3 (op,(a,b)) = cond ((op == Sum) ((uncurry (+)) (a,b)) ((uncurry (*)) (a,b)))|
+\just\equiv{ Cancelamento-|><| (7) x2 }
+|g3 (op,(a,b)) = cond ((p1 (op,(a,b)) == Sum) ((uncurry (+)).p2 (op,(a,b))) ((uncurry (*)).p2 (op,(a,b)))|
+\just\equiv{ Definição infixa de (Sum==); Igualdade Extensional (71) }
+|g3 = cond ((p1 == Sum) ((uncurry (+)).p2) ((uncurry (*)).p2)|
+\end{eqnarray*}
+De forma semelhante podemos fazer uma simplificação pointfree a |g4|
+\begin{eqnarray*}
+\start
+|g4(op,a) = cond ((op == Negate)) ((-1) * a) (expd a)|
+\just\equiv{ Definição infixa de (+); Definição uncurry (84) }
+|g4(op,a) = cond (p1 (op,a) == Negate) (((-1)*).p2 (op,a)) (expd.p2 (op,a))|
+\just\equiv{ Definição infixa de (Negate ==); Igualdade Extensional (71) }
+|g4 = cond ((Negate==) . p1) ((-1)*).p2 expd.p2|
+\end{eqnarray*}
+Agora já podemos juntar tudo numa única função
+\begin{code}
+g_eval_exp n = either (g1 n) (either g2 (either g3 g4)) where
+  g1 n _ = n
+  g2 = id
+  g3 = cond ((Sum==).p1) (uncurry (+).p2) (uncurry (*).p2)
+  g4 = cond ((Negate==).p1) (((-1)*).p2) (expd.p2)
 ---
 clean x = (outExpAr . mcCond) x where
-    cmpBin (Bin op a b) = (op == Product) && (a == (N 0) || b == (N 0))
+    cmpBin (Bin op a b) = (op == Product) && (a == N 0 || b == N 0)
     cmpBin _ = False
     mcCond = cond cmpBin (const (N 0)) id
 ---
