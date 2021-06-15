@@ -1206,7 +1206,13 @@ Apresentar de seguida a justificação da solução encontrada.
 \begin{code}
 calcLine :: NPoint -> (NPoint -> OverTime NPoint)
 calcLine = cataList h where
-   h = undefined
+   h = either a1 a2
+   
+a1 :: () -> NPoint -> OverTime NPoint
+a1 () a b = []
+a2 :: (Rational, NPoint -> OverTime NPoint) -> NPoint -> OverTime NPoint
+a2 (x,w) (y:z) p1 = ((x+y)*toRational p1):w z p1
+
 
 deCasteljau :: [NPoint] -> OverTime NPoint
 deCasteljau = hyloAlgForm alg coalg where
