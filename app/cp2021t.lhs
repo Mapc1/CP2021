@@ -1152,38 +1152,172 @@ g_eval_exp n = either (g1 n) (either g2 (either g3 g4)) where
   g3 = cond ((Sum==).p1) (uncurry (+).p2) (uncurry (*).p2)
   g4 = cond ((Negate==).p1) (((-1)*).p2) (expd.p2)
 ---
-clean x = (outExpAr . mcCond) x where
-    cmpBin (Bin op a b) = (op == Product) && (a == N 0 || b == N 0)
-    cmpBin _ = False
-    mcCond = cond cmpBin (const (N 0)) id
----
+\end{code}
+\clearpage
+Antes de podermos definir ambos os genes temos primeiro que inferir os tipos de ambos catamorfismo e anamorfismo.
+\begin{eqnarray*}
+\xymatrix@@C=2cm{
+    \mathbb{R}
+&
+    |1 +|\mathbb{R}| + (BinOp + (|\mathbb{R}| >< |\mathbb{R}|)) + (UnOp + |\mathbb{R}|)|
+           \ar[l]_-{|gopt|}
+\\
+     |ExpAr|
+           \ar[u]^-{|cata gopt|}
+           \ar[r]^-{|outExpAr|}
+&
+     |1 +|\mathbb{R}|+ (BinOp + (X >< X)) + (UnOp + X)| 
+           \ar[l]^-{|inExpAr|}
+           \ar[u]_-{|id + id + (id + (cata gopt >< cata gopt)) + (id + cata gopt)|}
+\\
+     |ExpAr|
+           \ar[u]^-{|anaLTree clean|}
+           \ar[r]_-{|clean|}
+&
+     |1 +|\mathbb{R}|+ (BinOp + (ExpAr >< ExpAr)) + (UnOp + ExpAr)|
+           \ar[u]_-{|id + id + (id + (anaLTree clean >< anaLTree clean)) + (id + anaLTree clean)|}
+}
+\end{eqnarray*}
+Podemos reparar que o diagrama do catamorfismo é o mesmo que o do catamorfismo de |g_eval_exp|. Assim podemos já concluir que |gopt| é igual a |g_eval_exp|
+\begin{code}
 gopt n = g_eval_exp n
 \end{code}
+Agora relativamente à função |clean| podemos ver que o seu tipo é: 
+\begin{eqnarray*}
+\xymatrix@@C=2cm{
+    |ExpAr|
+           \ar[r]_-{|clean|}
+&
+     |1 +|\mathbb{R}|+ (BinOp + (ExpAr >< ExpAr)) + (UnOp + ExpAr)|
+}
+\end{eqnarray*}
+Com algum raciocínio notamos que esta função pode ser dividida em duas partes, uma que limpa a equação e outra que a converte para o tipo de saída.
+Assim:
+\begin{eqnarray*}
+\xymatrix@@C=2cm{
+    |ExpAr|
+           \ar[r]_-{|cleanPart|}
+&
+     |ExpAr|
+           \ar[r]_-{|convert|}
+&
+     |1 +|\mathbb{R}|+ (BinOp + (ExpAr >< ExpAr)) + (UnOp + ExpAr)|
+}
+\end{eqnarray*}
+Através do diagrama conclui-se que convert não é mais que |outExpAr| por isso:
+\begin{code}
+convert = outExpAr
+\end{code}
+Finalmente só nos falta definir |cleanPart|. Para isso precisamos de recorrer ao nosso amigo condicional de McCarthy
+\begin{code}
+cleanPart x = (cond cmp (const (N 0)) id) x  where
+    cmp (Bin op a b) = (op == Product) && (a == N 0 || b == N 0)
+    cmp (Un op a) = (op == E) && (a == N 0)
+    cmp x = False
+\end{code}
+Agora só nos falta definir clean como a junção das duas:
+\begin{code}
+clean x = (convert . cleanPart) x
+---
+\end{code}
+Através da definição de |sd| podemos ver que esta é composta por um catamorfismo e um |p2| por isso vejamos o seu diagrama.
+\begin{eqnarray*}
+\xymatrix@@C=0.5cm{
+    |ExpAr|
+           \ar[d]_-{|cata sd_gen|}
+&
+    |1 + | \mathbb{R} | + (BinOp + (X >< X)) + (UnOp + X)|
+           \ar[d]^{|id + id + (id + (cata sd_gen >< cata sd_gen)) + (id + cata sd_gen)|}
+           \ar[l]_-{|inExpAr|}
+\\
+     |(ExpAr,ExpAr)|
+           \ar[d]_-{|p2|}
+&
+     |1 +|\mathbb{R}| + (BinOp + ((ExpAr,ExpAr) >< (ExpAr,ExpAr))) + (UnOp + (ExpAr,ExpAr))|
+           \ar[l]^-{|sd_gen|}
+\\
+     |ExpAr|
+}
+\end{eqnarray*}
+Através deste diagrama conclui-se que |sd_gen| tem a seguinte estrutura:
+\begin{eqnarray*}
+|sd_gen = either sd_gen1 (either sd_gen2 (either sd_gen3 sd_gen4))|
+\end{eqnarray*} 
+\clearpage
+Com esta informação podemos formular uma solução. Bem, uma solução possível será guardar no primeiro elemento do par a equação original
+e no segundo elemento a função derivada. 
 
+Agora já podemos começar a definir as funções constituintes:
+\begin{eqnarray*}
+\start
+|sd_gen1 = const (X,N 1)|
+|sd_gen2 n = (N n,N 0)|
+|sd_gen3 (op,((a,b),(c,d))) = cond (Sum == op) deriv_sum ((a,b),(c,d)) deriv_prod ((a,b),(c,d))|
+%
+\just\equiv{ Natural-|p1| (12); Natural-|p2| (13) x2 }
+%
+|sd_gen3 (op,((a,b),(c,d))) = cond (((Sum==) . p1) (op,((a,b),(c,d)))) (deriv_sum . p2) (op,((a,b),(c,d))) (deriv_prod . p2) (op,((a,b),(c,d)))|\\
+%
+\just\equiv{ Igualdade Extensional (71) }
+%
+|sd_gen3 = cond ((Sum==) . p1) (deriv_sum . p2) (deriv_prod . p2)|
+\end{eqnarray*}
+Agora definimos ambos |deriv_sum| e |deriv_prod|
+\begin{eqnarray*}
+&|deriv_sum ((a,b),(c,d))|&|= (Bin Sum a c,Bin Sum b d)|\\
+&|deriv_prod ((a,b),(c,d))|&|= (Bin Product a c, Bin Sum (Bin Product a d) (Bin Product b c))|
+\end{eqnarray*}
+Agora só falta |sd_gen4|
+\begin{eqnarray*}
+\start
+|sd_gen4 (op,a) = cond (Sum == op) deriv_negate (a,b) deriv_exp (a,b)|
+\just\equiv{ Definição infixa de (Sum=); Natural-|p1| (12); Natural-|p2| (13) x2 }
+|sd_gen4 (op,a) = cond ((Sum==) . p1) (op,((a,b),(c,d))) (deriv_negate . p2) (op,(a,b)) (deriv_exp . p2) (op,(a,b))|
+\just\equiv{ Igualdade Extensional (71) }
+|sd_gen4 = cond ((Sum==) . p1) (deriv_negate . p2) (deriv_exp . p1)|
+\end{eqnarray*}
+Definições de |deriv_negate| e |deriv_exp|
+\begin{eqnarray*}
+deriv_negate (a,b) = (Un Negate a,Un Negate b)
+deriv_exp (a,b) = (Un E a,Bin Product (Un E a) b)
+\end{eqnarray*}
+Agora podemos juntar tudo em Haskell
 \begin{code}
 sd_gen :: Floating a =>
     Either () (Either a (Either (BinOp, ((ExpAr a, ExpAr a), (ExpAr a, ExpAr a))) (UnOp, (ExpAr a, ExpAr a)))) -> (ExpAr a, ExpAr a)
-sd_gen = either sd_Var (either sd_Num (either sd_Bin sd_Un)) where
-    sd_Var = const (X, (N 1)) 
-    sd_Num = split (inExpAr . i2 . i1) (const (N 0)) 
-   
-    sd_Bin (Sum,     ((a,b),(c,d))) = ((Bin Sum a c), (Bin Sum b d))
-    sd_Bin (Product, ((a,b),(c,d))) = ((Bin Product a c), (Bin Sum (Bin Product a d) (Bin Product b c)))
-   
-    sd_Un (E,(a,b))       = ((Un E a),(Bin Product (Un E a) b))
-    sd_Un (Negate, (a,b)) = ((Un Negate a), (Un Negate b))
+sd_gen = either sd_gen1 (either sd_gen2 (either sd_gen3 sd_gen4)) where
+    sd_gen1 = const (X,N 1)
+    sd_gen2 n =  (N n,N 0) 
+    sd_gen3 = cond ((Sum==) . p1) (deriv_sum . p2) (deriv_prod . p2) where
+        deriv_sum ((a,b),(c,d)) = (Bin Sum a c,Bin Sum b d)
+        deriv_prod ((a,b),(c,d)) = (Bin Product a c, Bin Sum (Bin Product a d) (Bin Product b c))
+    sd_gen4 = cond ((Negate==) . p1) (deriv_negate . p2) (deriv_exp . p2) where
+        deriv_negate (a,b) = (Un Negate a,Un Negate b)
+        deriv_exp (a,b) = (Un E a,Bin Product (Un E a) b)
 \end{code}
-
+Para a realização de |ad_gen| as funções são bastante semelhantes
+\begin{eqnarray*}
+\start
+ad_gen1 = const (n,1)
+ad_gen2 = split id (const 0)
+ad_gen3 = cond ((Sum==).p1) (deriv_sum_ad.p2) (deriv_prod_ad.p2)
+ad_gen4 = cond ((Negate==).p1) (deriv_negate_ad.p2) (deriv_exp_ad.p2)
+%
+deriv_sum_ad ((a,b),(c,d)) = (a+c,b+d)
+deriv_prod_ad ((a,b),(c,d)) = (a*c,(a*d) + (b*c))
+deriv_negate_ad (a,b) = (-1*a,-1*b)
+deriv_exp_ad (a,b) = (expd a,b*(expd a))
+\end{eqnarray*}
 \begin{code}
-ad_gen n = either ad_Var (either ad_Num (either ad_Bin ad_Un)) where
-    ad_Var = const (n,1)
-    ad_Num = split id (const 0)
-    
-    ad_Bin (Sum,     ((a,b),(c,d))) = ((a+c), (b+d))
-    ad_Bin (Product, ((a,b),(c,d))) = ((a*c), ((a*d) + (b*c)))
-    
-    ad_Un  (E,       (a,b)) = ((expd a), (b*(expd a)))
-    ad_Un  (Negate,  (a,b)) = (((-1)*a), ((-1)*b))
+ad_gen n = either ad_gen1 (either ad_gen2 (either ad_gen3 ad_gen4)) where
+    ad_gen1 = const (n,1)
+    ad_gen2 = split id (const 0)
+    ad_gen3 = cond ((Sum==).p1) (deriv_sum_ad.p2) (deriv_prod_ad.p2) where
+        deriv_sum_ad ((a,b),(c,d)) = (a+c,b+d)
+        deriv_prod_ad ((a,b),(c,d)) = (a*c,(a*d) + (b*c))
+    ad_gen4 = cond ((Negate==).p1) (deriv_negate_ad.p2) (deriv_exp_ad.p2) where
+        deriv_negate_ad (a,b) = ((-1)*a,(-1)*b)
+        deriv_exp_ad (a,b) = (expd a,(b*(expd a)))
 \end{code}
 
 \subsection*{Problema 2}
