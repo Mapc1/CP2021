@@ -1236,6 +1236,45 @@ avgLTree = p1.cataLTree gene where
 Inserir em baixo o código \Fsharp\ desenvolvido, entre \verb!\begin{verbatim}! e \verb!\end{verbatim}!:
 
 \begin{verbatim}
+module BTree
+
+open Cp
+import Data.Monoid
+import Control.Applicative
+import Data.List
+
+-- (1) Datatype definition -----------------------------------------------------
+
+type btree = Empty | Node(a, (BTree a, BTree a))
+
+let inBTree x = 
+         match x with either (const Empty) Node
+
+let outBTree x =
+         match x with
+         | Empty -> Left ()
+         | Node (a,(t1,t2)) -> Right(a,(t1,t2))
+
+-- (2) Ana + cata + hylo -------------------------------------------------------
+
+let recBTree f = baseBTree id f         
+
+let rec cataBTree a = a << (recBTree (cataLBree a)) << outBree
+
+let rec anaBTree f = inLTree << (recBTree (anaBTree f) ) << f
+
+let hyloBTree a c = cataBTree a << anaBTree c
+
+-- (3) Map ---------------------------------------------------------------------
+
+instance Functor BTree
+         where fmap f = cataBTree ( inBTree . baseBTree f id )
+let fmap f = cataBTree ( inBTree << baseBTree f id )
+
+
+-- (4.1) Inversion (mirror) ----------------------------------------------------
+
+let invBTree x = cataBTree (inBTree << (id -|- swap)) x
 \end{verbatim}
 
 %----------------- Fim do anexo com soluções dos alunos ------------------------%
