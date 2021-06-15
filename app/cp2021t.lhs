@@ -1224,12 +1224,40 @@ avg = p1.avg_aux
 \end{code}
 
 \begin{code}
-avg_aux = undefined
+a1 = const 0
+a2 = const 0
+
+a = split a1 a2
+
+b1 :: Fractional a => (a,(a,a)) -> a
+b1 (n,(a,l)) = (/) ( (a*l) + n ) (l+1)
+
+b2 :: Num a =>(a,(a,a)) -> a
+b2 (x,(y,z))= z+1
+
+b = split b1 b2
+
+avg_aux = cataList ( either a b )
+
 \end{code}
 Solução para árvores de tipo \LTree:
 \begin{code}
 avgLTree = p1.cataLTree gene where
-   gene = undefined
+   gene = either ta tb
+
+ta1 ::  Fractional a => a -> a
+ta1 a = a
+ta2 ::Fractional a =>  a -> a
+ta2 _ = 1
+ta = split ta1 ta2
+
+tb1 ::Fractional a =>  ((a,a),(a,a))-> a
+tb1 ((a1,b1),(a2,b2)) = (/) ((a1*b1)+(a2*b2)) (b1+b2)
+tb2 ::Fractional a => ((a,a),(a,a))-> a
+tb2 ((a1,b1),(a2,b2)) = b1 + b2
+tb = split tb1 tb2
+
+
 \end{code}
 
 \subsection*{Problema 5}
