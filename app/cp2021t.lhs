@@ -127,15 +127,15 @@
 
 \begin{center}\large
 \begin{tabular}{ll}
-\textbf{Grupo} nr. & 999 (preencher)
+\textbf{Grupo} nr. & 114 
 \\\hline
-a11111 & Nome1 (preencher)
+a93283 & Marco Costa
 \\
-a22222 & Nome2 (preencher)
+a68243 & José Silva
 \\
-a33333 & Nome3 (preencher)
+a89592 & Vasco Mota 
 \\
-a44444 & Nome4 (preencher, se aplicável, ou apagar)
+a42865 & Mário Coelho 
 \end{tabular}
 \end{center}
 
