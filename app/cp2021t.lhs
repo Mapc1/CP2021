@@ -1350,7 +1350,7 @@ let qSort = hyloBTree inord qsep)
 
 -- (4.5) Traces -------------------------------------------
 
-(let tunion(a,(l,r)) = union (map (a) l) (map (a) r) 
+let tunion(a,(l,r)) = union (map (a) l) (map (a) r) 
 
 let traces = cataBTree (either (konst [[]]) tunion))
 
