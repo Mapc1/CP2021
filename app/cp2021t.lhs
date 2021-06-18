@@ -1340,12 +1340,12 @@ Apresentar de seguida a justificação da solução encontrada.
 \begin{code}
 calcLine :: NPoint -> (NPoint -> OverTime NPoint)
 calcLine = cataList h where
-  h = either a1 a2
+  h = either be q
 
-a1 :: () -> NPoint -> OverTime NPoint
-a1 () a b = []
-a2 :: (Rational, NPoint -> OverTime NPoint) -> NPoint -> OverTime NPoint
-a2 (r,n2ot) (nph:npt) f2 = ((r+nph)*toRational f2):n2ot npt f2
+be :: () -> NPoint -> OverTime NPoint
+be () a b = []
+q :: (Rational, NPoint -> OverTime NPoint) -> NPoint -> OverTime NPoint
+q (r,n2ot) (nph:npt) f2 = ((r+nph)*toRational f2):n2ot npt f2
 
 
 deCasteljau :: [NPoint] -> OverTime NPoint
